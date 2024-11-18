@@ -1,63 +1,88 @@
 import tkinter as tk
 from tkinter import messagebox
+import random
 
 class InterfazJuego:
-    def __init__(self, root, db, juego):
+    def __init__(self, ventana, db, jugador, tematica_data):
+        self.ventana = ventana
         self.db = db
-        self.juego = juego
+        self.jugador = jugador
+        self.tematica_data = tematica_data
+        self.palabra = ''
+        self.intentos = 6
+        self.letras_adivinadas = []
+        self.crear_interfaz()
 
-        self.root = root
-        self.root.title("Juego del Ahorcado")
+    def crear_interfaz(self):
+        jugador_id = self.jugador[0]
+        stats = self.db.mostrar_estadisticas(jugador_id)
 
-        self.temas = self.db.obtener_tematicas()
-        self.tema_var = tk.StringVar(value=self.temas[0])
-        tk.Label(root, text="Elige una temática:").pack()
-        for tema in self.temas:
-            tk.Radiobutton(root, text=tema, variable=self.tema_var, value=tema).pack()
+        ganadas, perdidas = stats
+        label_estadisticas = tk.Label(self.ventana, text=f"Ganadas: {ganadas}, Perdidas: {perdidas}")
+        label_estadisticas.pack()
 
-        self.jugador_var = tk.StringVar()
-        tk.Label(root, text="Nombre del jugador:").pack()
-        tk.Entry(root, textvariable=self.jugador_var).pack()
+        label_titulo = tk.Label(self.ventana, text="¡Bienvenido al Juego del Ahorcado!")
+        label_titulo.pack()
 
-        tk.Button(root, text="Iniciar Juego", command=self.iniciar_juego).pack()
+        self.label_palabra = tk.Label(self.ventana, text="")
+        self.label_palabra.pack()
+
+        self.entry_letra = tk.Entry(self.ventana)
+        self.entry_letra.pack()
+
+        btn_adivinar = tk.Button(self.ventana, text="Adivinar Letra", command=self.adivinar_letra)
+        btn_adivinar.pack()
+
+        self.label_intentos = tk.Label(self.ventana, text=f"Intentos restantes: {self.intentos}")
+        self.label_intentos.pack()
+
+        self.iniciar_juego()
 
     def iniciar_juego(self):
-        tema = self.tema_var.get()
-        jugador = self.jugador_var.get().strip()
-        if not jugador:
-            messagebox.showerror("Error", "Por favor, ingresa un nombre de jugador.")
+        palabras = self.db.obtener_palabras_por_tematica(self.tematica_data['id'])
+        if not palabras:
+            messagebox.showerror("Error", "No hay palabras disponibles para esta temática.")
+            self.ventana.destroy()
             return
 
-        self.db.guardar_jugador(jugador)
-        self.juego.seleccionar_palabra(tema)
+        self.palabra = random.choice(palabras)
+        self.letras_adivinadas = ['_'] * len(self.palabra)
+        self.actualizar_palabra()
 
-        self.ventana_juego = tk.Toplevel(self.root)
-        self.ventana_juego.title("Adivina la palabra")
-
-        self.palabra_label = tk.Label(self.ventana_juego, text=" ".join(self.juego.letras_adivinadas))
-        self.palabra_label.pack()
-
-        self.letra_var = tk.StringVar()
-        tk.Entry(self.ventana_juego, textvariable=self.letra_var).pack()
-        tk.Button(self.ventana_juego, text="Adivinar", command=self.adivinar_letra).pack()
-
-        self.intentos_label = tk.Label(self.ventana_juego, text=f"Intentos restantes: {self.juego.intentos}")
-        self.intentos_label.pack()
-
-        self.jugador = jugador
+    def actualizar_palabra(self):
+        self.label_palabra.config(text=' '.join(self.letras_adivinadas))
 
     def adivinar_letra(self):
-        letra = self.letra_var.get().strip()
-        if letra and len(letra) == 1:
-            correcto = self.juego.adivinar_letra(letra.lower())
-            self.palabra_label.config(text=" ".join(self.juego.letras_adivinadas))
-            self.intentos_label.config(text=f"Intentos restantes: {self.juego.intentos}")
+        letra = self.entry_letra.get().lower()
+        self.entry_letra.delete(0, tk.END)
 
-            if self.juego.juego_terminado():
-                if self.juego.es_ganador():
-                    messagebox.showinfo("Resultado", "¡Ganaste!")
-                    self.db.actualizar_estadisticas(self.jugador, 1, 0)
-                else:
-                    messagebox.showinfo("Resultado", "Perdiste...")
-                    self.db.actualizar_estadisticas(self.jugador, 0, 1)
-                self.ventana_juego.destroy()
+        if letra in self.letras_adivinadas or len(letra) != 1:
+            messagebox.showwarning("Advertencia", "Letra ya adivinada o entrada inválida.")
+            return
+
+        if letra in self.palabra:
+            for index, char in enumerate(self.palabra):
+                if char == letra:
+                    self.letras_adivinadas[index] = letra
+            self.actualizar_palabra()
+            if '_' not in self.letras_adivinadas:
+                messagebox.showinfo("¡Ganaste!", "¡Felicidades! Has adivinado la palabra.")
+                self.finalizar_juego(True)
+                self.ventana.destroy()
+        else:
+            self.intentos -= 1
+            self.label_intentos.config(text=f"Intentos restantes: {self.intentos}")
+            if self.intentos == 0:
+                messagebox.showerror("Perdiste", f"Has perdido. La palabra era: {self.palabra}")
+                self.finalizar_juego(False)
+                self.ventana.destroy()
+
+    def finalizar_juego(self, ganada):
+        self.jugador[0]  # ID del jugador
+        self.db.registrar_estadisticas(self.jugador[0], ganada)
+
+
+
+
+
+

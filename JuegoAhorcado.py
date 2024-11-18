@@ -1,30 +1,38 @@
 import random
 
-
 class JuegoAhorcado:
-    def __init__(self, db):
+    def __init__(self, db, jugador, tematica):
         self.db = db
+        self.jugador = jugador
+        self.tematica = tematica
         self.palabra = ""
         self.intentos = 6
         self.letras_adivinadas = []
+        self.guardar_palabra()
 
-    def seleccionar_palabra(self, tema):
-        palabras = self.db.obtener_palabras_por_tematica(tema)
-        self.palabra = random.choice(palabras)
-        self.letras_adivinadas = ["_" for _ in self.palabra]
+    def guardar_palabra(self):
+        palabras = self.db.obtener_palabras_por_tematica(self.tematica['id'])
+        if palabras:
+            self.palabra = random.choice(palabras)  # Seleccionar una palabra aleatoria
+        else:
+            print("No hay palabras disponibles para esta temática.")
 
     def adivinar_letra(self, letra):
-        acierto = False
-        for i, l in enumerate(self.palabra):
-            if l == letra:
-                self.letras_adivinadas[i] = letra
-                acierto = True
-        if not acierto:
+        if letra in self.palabra and letra not in self.letras_adivinadas:
+            self.letras_adivinadas.append(letra)
+            return True
+        elif letra not in self.palabra:
             self.intentos -= 1
-        return acierto
+        return False
 
-    def juego_terminado(self):
-        return self.intentos == 0 or "_" not in self.letras_adivinadas
+    def palabra_completa(self):
+        return all(letra in self.letras_adivinadas for letra in self.palabra)
 
-    def es_ganador(self):
-        return "_" not in self.letras_adivinadas
+    def estado_juego(self):
+        palabra_oculta = ''.join([letra if letra in self.letras_adivinadas else '_' for letra in self.palabra])
+        return palabra_oculta, self.intentos
+
+    def finalizar_juego(self, ganada):
+        self.db.registrar_estadisticas(self.jugador[0], ganada)
+
+

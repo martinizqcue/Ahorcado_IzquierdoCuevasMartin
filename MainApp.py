@@ -1,13 +1,14 @@
+import tkinter as tk
 from BaseDatos import BaseDatos
-from InterfazJuego import InterfazJuego
-from JuegoAhorcado import JuegoAhorcado
+from InterfazInicio import InterfazInicio
+
+def main():
+    db = BaseDatos()
+    ventana = tk.Tk()
+    app = InterfazInicio(ventana, db)
+    ventana.mainloop()
+    db.cerrar_conexion()
 
 if __name__ == "__main__":
-    from tkinter import Tk
+    main()
 
-    db = BaseDatos()
-    juego = JuegoAhorcado(db)
-
-    root = Tk()
-    interfaz = InterfazJuego(root, db, juego)
-    root.mainloop()

@@ -1,50 +1,83 @@
 import mysql.connector
-import random
 
 class BaseDatos:
     def __init__(self):
-        self.conexion = mysql.connector.connect(
+        self.connection = mysql.connector.connect(
             host="localhost",
             user="root",
             password="",
             database="pythonAhorcado"
         )
-        self.cursor = self.conexion.cursor()
 
-    def obtener_tematicas(self):
-        query = "SELECT nombre FROM tematicas"
-        self.cursor.execute(query)
-        return [row[0] for row in self.cursor.fetchall()]
-
-    def obtener_palabras_por_tematica(self, tematica):
-        query = """
-        SELECT p.palabra
-        FROM palabras p
-        JOIN tematicas t ON p.tematica_id = t.id
-        WHERE t.nombre = %s
-        """
-        self.cursor.execute(query, (tematica,))
-        return [row[0] for row in self.cursor.fetchall()]
-
-    def guardar_jugador(self, nombre):
+    def mostrar_estadisticas(self, jugador_id):
+        cursor = self.connection.cursor()
         try:
-            query = "INSERT INTO jugadores (nombre) VALUES (%s)"
-            self.cursor.execute(query, (nombre,))
-            self.conexion.commit()
-        except mysql.connector.errors.IntegrityError:
-            pass  # Si el jugador ya existe, lo ignoramos
+            cursor.execute("SELECT ganadas, perdidas FROM jugadores WHERE id = %s", (jugador_id,))
+            result = cursor.fetchone()
+            if result is None:
+                return (0, 0)  # Devuelve 0 si no hay estadísticas
+            return result
+        except mysql.connector.Error as err:
+            print(f"Error al mostrar estadísticas: {err}")
+            return (0, 0)  # Manejo de errores
+        finally:
+            cursor.close()
 
-    def actualizar_estadisticas(self, nombre, ganadas, perdidas):
-        self.guardar_jugador(nombre)
-        query = """
-        INSERT INTO estadisticas (jugador_id, ganadas, perdidas)
-        VALUES (
-            (SELECT id FROM jugadores WHERE nombre = %s),
-            %s, %s
-        )
-        ON DUPLICATE KEY UPDATE
-            ganadas = ganadas + VALUES(ganadas),
-            perdidas = perdidas + VALUES(perdidas)
-        """
-        self.cursor.execute(query, (nombre, ganadas, perdidas))
-        self.conexion.commit()
+    def registrar_estadisticas(self, jugador_id, ganada):
+        cursor = self.connection.cursor()
+        if ganada:
+            cursor.execute("UPDATE jugadores SET ganadas = ganadas + 1 WHERE id = %s", (jugador_id,))
+        else:
+            cursor.execute("UPDATE jugadores SET perdidas = perdidas + 1 WHERE id = %s", (jugador_id,))
+        self.connection.commit()
+        cursor.close()
+
+    def obtener_jugadores(self):
+        cursor = self.connection.cursor()
+        try:
+            cursor.execute("SELECT id, nombre FROM jugadores")
+            return cursor.fetchall()  # Retorna una lista de tuplas (id, nombre)
+        except mysql.connector.Error as err:
+            print(f"Error al obtener jugadores: {err}")
+            return []
+        finally:
+            cursor.close()
+
+    def obtener_tematica(self):
+        cursor = self.connection.cursor()
+        try:
+            cursor.execute("SELECT id, nombre FROM tematicas")
+            return cursor.fetchall()  # Retorna una lista de tuplas (id, nombre)
+        except mysql.connector.Error as err:
+            print(f"Error al obtener temáticas: {err}")
+            return []
+        finally:
+            cursor.close()
+
+    def obtener_palabras_por_tematica(self, tematica_id):
+        cursor = self.connection.cursor()
+        try:
+            cursor.execute("SELECT palabra FROM palabras WHERE tematica_id = %s", (tematica_id,))
+            return [row[0] for row in cursor.fetchall()]  # Retorna una lista de palabras
+        except mysql.connector.Error as err:
+            print(f"Error al obtener palabras: {err}")
+            return []
+        finally:
+            cursor.close()
+
+    def registrar_jugador(self, nombre):
+        cursor = self.connection.cursor()
+        cursor.execute("INSERT INTO jugadores (nombre) VALUES (%s)", (nombre,))
+        self.connection.commit()
+        cursor.close()
+
+    def cerrar_conexion(self):
+        self.connection.close()
+
+
+
+
+
+
+
+
