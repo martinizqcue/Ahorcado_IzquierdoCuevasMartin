@@ -1,8 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 import random
-from PIL import Image,ImageTk
-
+from PIL import Image, ImageTk
 
 class InterfazJuego:
     def __init__(self, ventana, db, jugador, tematica_data):
@@ -13,37 +12,64 @@ class InterfazJuego:
         self.palabra = ''
         self.intentos = 6
         self.letras_adivinadas = []
+        self.letras_usadas = []  # Lista para almacenar letras usadas
 
         # Cargar imágenes desde monigote0.png hasta monigote6.png
         self.imagenes = [ImageTk.PhotoImage(Image.open(f'monigote{i}.png')) for i in range(7)]
 
-        self.imagen_label = tk.Label(self.ventana)  # Label para mostrar la imagen
-        self.imagen_label.pack()
+        self.ventana.title("Juego del Ahorcado")
+
+        self.centrar_ventana()
+        self.ventana.resizable(False, False)  # Desactivar maximizar
+        self.ventana.configure(bg="cyan2")  # Color de fondo
+
+        self.imagen_label = tk.Label(self.ventana, bg="purple4")  # Label para mostrar la imagen
+        self.imagen_label.pack(pady=10)
 
         self.crear_interfaz()
+
+    def centrar_ventana(self):
+        # Obtener el tamaño de la pantalla
+        ancho_pantalla = self.ventana.winfo_screenwidth()
+        alto_pantalla = self.ventana.winfo_screenheight()
+
+        # Obtener el tamaño de la ventana
+        ancho_ventana = 700
+        alto_ventana = 700
+
+        # Calcular la posición x, y para centrar la ventana
+        x = (ancho_pantalla // 2) - (ancho_ventana // 2)
+        y = (alto_pantalla // 2) - (alto_ventana // 2)
+
+        # Colocar la ventana en la posición calculada
+        self.ventana.geometry(f"{ancho_ventana}x{alto_ventana}+{x}+{y}")
 
     def crear_interfaz(self):
         jugador_id = self.jugador[0]
         stats = self.db.mostrar_estadisticas(jugador_id)
 
         ganadas, perdidas = stats
-        label_estadisticas = tk.Label(self.ventana, text=f"Ganadas: {ganadas}, Perdidas: {perdidas}")
-        label_estadisticas.pack()
+        label_estadisticas = tk.Label(self.ventana, text=f"Ganadas: {ganadas}, Perdidas: {perdidas}", bg="gold", font=("Arial", 12, 'bold'))
+        label_estadisticas.pack(pady=5)
 
-        label_titulo = tk.Label(self.ventana, text="¡Bienvenido al Juego del Ahorcado!")
-        label_titulo.pack()
+        label_titulo = tk.Label(self.ventana, text="¡Bienvenido al Juego del Ahorcado!", bg="SeaGreen1", fg="black", font=("Arial", 16, 'bold'))
+        label_titulo.pack(pady=10)
 
-        self.label_palabra = tk.Label(self.ventana, text="")
-        self.label_palabra.pack()
+        self.label_letras_usadas = tk.Label(self.ventana, text="Letras usadas: ",fg="white", bg="magenta4", font=("Arial", 12, 'bold'))
+        self.label_letras_usadas.pack(pady=5)
 
-        self.entry_letra = tk.Entry(self.ventana)
-        self.entry_letra.pack()
+        self.label_palabra = tk.Label(self.ventana, text="", bg="lemon chiffon", font=("Arial", 14))
+        self.label_palabra.pack(pady=10)
 
-        btn_adivinar = tk.Button(self.ventana, text="Adivinar Letra", command=self.adivinar_letra)
-        btn_adivinar.pack()
+        self.entry_letra = tk.Entry(self.ventana, font=("Arial", 14), justify='center')
+        self.entry_letra.pack(pady=5)
 
-        self.label_intentos = tk.Label(self.ventana, text=f"Intentos restantes: {self.intentos}")
-        self.label_intentos.pack()
+        btn_adivinar = tk.Button(self.ventana, text="Adivinar Letra", command=self.adivinar_letra, bg="deep pink", fg="black", font=("Arial", 12, 'bold'))
+        btn_adivinar.pack(pady=10)
+
+        self.label_intentos = tk.Label(self.ventana, text=f"Intentos restantes: {self.intentos}", bg="red",fg="white", font=("Arial", 12, 'bold'))
+        self.label_intentos.pack(pady=5)
+
 
         self.iniciar_juego()
 
@@ -66,9 +92,12 @@ class InterfazJuego:
         letra = self.entry_letra.get().lower()
         self.entry_letra.delete(0, tk.END)
 
-        if letra in self.letras_adivinadas or len(letra) != 1:
+        if letra in self.letras_usadas or len(letra) != 1 or not letra.isalpha():
             messagebox.showwarning("Advertencia", "Letra ya adivinada o entrada inválida.")
             return
+
+        self.letras_usadas.append(letra)  # Agregar letra a las letras usadas
+        self.label_letras_usadas.config(text=f"Letras usadas: {', '.join(self.letras_usadas)}")  # Actualizar la etiqueta
 
         if letra in self.palabra:
             for index, char in enumerate(self.palabra):
@@ -90,8 +119,4 @@ class InterfazJuego:
 
     def finalizar_juego(self, ganada):
         self.db.registrar_estadisticas(self.jugador[0], ganada)
-
-
-
-
 
