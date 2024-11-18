@@ -1,7 +1,10 @@
 import tkinter as tk
 from tkinter import messagebox
 
+import mysql
+
 from InterfazJuego import InterfazJuego
+
 
 class InterfazInicio:
     def __init__(self, ventana, db):
@@ -32,18 +35,27 @@ class InterfazInicio:
         label_jugador.pack(pady=10)
 
         self.jugador_var = tk.StringVar(self.ventana)  # Variable para almacenar el nombre del jugador
-        entry_jugador = tk.Entry(self.ventana, textvariable=self.jugador_var)
+        self.validador = self.ventana.register(self.validar_entrada)  # Registrar el validador
+
+        entry_jugador = tk.Entry(self.ventana, textvariable=self.jugador_var, validate='key', validatecommand=(self.validador, '%S'))
         entry_jugador.pack(pady=5)
 
         btn_registrar = tk.Button(self.ventana, text="Registrar", command=self.registrar_jugador)
         btn_registrar.pack(pady=10)
 
+    def validar_entrada(self, entrada):
+        # Verifica si la entrada es una letra
+        return entrada.isalpha() or entrada == ""  # Permitir letras y el espacio vacío
+
     def registrar_jugador(self):
         nombre_jugador = self.jugador_var.get().strip()
         if nombre_jugador:
-            self.db.registrar_jugador(nombre_jugador)  # Registra al jugador en la base de datos
-            messagebox.showinfo("Registro", f"Jugador registrado: {nombre_jugador}")
-            self.jugador_var.set("")  # Limpia el campo de entrada
+            try:
+                self.db.registrar_jugador(nombre_jugador)  # Registra al jugador en la base de datos
+                messagebox.showinfo("Registro", f"Jugador registrado: {nombre_jugador}")
+                self.jugador_var.set("")  # Limpia el campo de entrada
+            except mysql.connector.errors.IntegrityError:
+                messagebox.showwarning("Advertencia", "Este nombre ya está registrado. Puedes iniciar sesión y jugar.")
         else:
             messagebox.showwarning("Advertencia", "Por favor, ingresa un nombre.")
 
@@ -73,7 +85,8 @@ class InterfazInicio:
             ventana_juego = tk.Toplevel(self.ventana)  # Crear una nueva ventana para el juego
             InterfazJuego(ventana_juego, self.db, jugador, tematica_data)  # Iniciar la interfaz del juego
         else:
-            print("Por favor, selecciona un jugador y una temática.")
+            messagebox.showwarning("Advertencia","Por favor, selecciona un jugador y una temática.")
+
 
 
 
