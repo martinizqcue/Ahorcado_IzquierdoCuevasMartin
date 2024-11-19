@@ -15,7 +15,10 @@ class InterfazJuego:
         self.letras_usadas = []  # Lista para almacenar letras usadas
 
         # Cargar imágenes desde monigote0.png hasta monigote6.png
-        self.imagenes = [ImageTk.PhotoImage(Image.open(f'monigote{i}.png')) for i in range(7)]
+        try:
+            self.imagenes = [ImageTk.PhotoImage(Image.open(f'Imagenes/monigote{i}.png')) for i in range(7)]
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudieron cargar las imágenes: {e}")
 
         self.ventana.title("Juego del Ahorcado")
 

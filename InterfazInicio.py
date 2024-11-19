@@ -106,5 +106,5 @@ class InterfazInicio:
             ventana_juego = tk.Toplevel(self.ventana)  # Crear una nueva ventana para el juego
             InterfazJuego(ventana_juego, self.db, jugador, tematica_data)  # Iniciar la interfaz del juego
         else:
-            messagebox.showwarning("Advertencia", "Por favor, selecciona un jugador y una temática.")
+            messagebox.showwarning("Advertencia", "Por favor, si no estás registrado REGISTRATE y selecciona un jugador y una temática.")
 
